@@ -31,6 +31,11 @@ EMPY_Analysisのインストール
 6. 
 ＞setupEMPY_Solver
 
-７．実行test
+７．jupyter実行 (EMPY_Solver使用）
 >jupyter notebook EddyCurrent/A-2_Phi_Potential_BathPlate_with_Reg.ipynb
 
+Run->Run All Cells
+
+8.jupyter実行 (JP_MARｓ/SparseSolve使用）
+A-2 Phi_Potential_BathPlate_with_Reg.ipynにおいて、cpp_solver="EMPY"を、cpp_solver="JP_MARs"に変更
+JP_MARｓ/SparseSolvでは収束しないことが確認される。

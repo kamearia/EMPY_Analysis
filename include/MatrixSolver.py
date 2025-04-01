@@ -4,16 +4,14 @@ import matplotlib.pylab as plt
 import os, sys
 import platform
 
-cpp_solver="EMPY"
-#cpp_solver="JP_MARs"
 #if platform.system() == 'Windows':
-if cpp_solver=="EMPY":
+#if cpp_solver=="EMPY":
     #sys.path.append(r'C:\EMSolution\EMSolPy3\x64\Release') 
-    sys.path.append(r'C:\EMSolution\EMSolPy5\EMPY_Analysis\bin\Release') 
-    import EMPY_Solver
-else:
-    sys.path.append(r'C:\EMSolution\EMSolPy5\EMPY_Analysis\bin\Release')
-    import SparseSolvPy
+sys.path.append(r'C:\EMSolution\EMSolPy5\EMPY_Analysis\bin\Release') 
+import EMPY_Solver
+#else:
+sys.path.append(r'C:\EMSolution\EMSolPy5\EMPY_Analysis\bin\Release')
+import SparseSolvPy
     
 class MatrixSolver:
     def __init__(self, matrix):
@@ -93,13 +91,15 @@ class MatrixSolver:
     @classmethod
     def iccg_solve(cls,fes, gf, A, Bvec,  **kwargs):
         print("enter iccg_solve")
-        default_values = {"tol": 1.E-10, "accel_factor":1.1, "max_iter":1000, "complex":False, "logplot":False}
+        default_values = {"tol": 1.E-10, "accel_factor":1.1, "max_iter":1000, "complex":False, 
+                          "logplot":False, "cpp_solver":"EMPY"}
         default_values.update(kwargs)
         tol=default_values["tol"]
         accel_factor=default_values["accel_factor"]
         max_iter=default_values["max_iter"]
         ccomplex=default_values["complex"]
         logplot=default_values["logplot"]
+        cpp_solver=default_values["cpp_solver"]
     
         asci = sp.csr_matrix (A.mat.CSR())
         #    A=None
