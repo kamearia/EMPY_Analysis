@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34622.214
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目", "ソリューション項目", "{8C6FF09B-326A-46FE-B7AA-ABE2E3CC4846}"
+	ProjectSection(SolutionItems) = preProject
+		..\.gitignore = ..\.gitignore
+	EndProjectSection
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "EMPY_Analysis", "EMPY_Analysis.pyproj", "{05D04573-742D-43BA-AB4C-0D6626D0A317}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Intel_SSA|Any CPU = Intel_SSA|Any CPU
+		Intel_SSA|x64 = Intel_SSA|x64
+		Intel_SSA|x86 = Intel_SSA|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+		Template|Any CPU = Template|Any CPU
+		Template|x64 = Template|x64
+		Template|x86 = Template|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{05D04573-742D-43BA-AB4C-0D6626D0A317}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05D04573-742D-43BA-AB4C-0D6626D0A317}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{05D04573-742D-43BA-AB4C-0D6626D0A317}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{05D04573-742D-43BA-AB4C-0D6626D0A317}.Intel_SSA|Any CPU.ActiveCfg = Debug|Any CPU
+		{05D04573-742D-43BA-AB4C-0D6626D0A317}.Intel_SSA|x64.ActiveCfg = Debug|Any CPU
+		{05D04573-742D-43BA-AB4C-0D6626D0A317}.Intel_SSA|x86.ActiveCfg = Debug|Any CPU
+		{05D04573-742D-43BA-AB4C-0D6626D0A317}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05D04573-742D-43BA-AB4C-0D6626D0A317}.Release|x64.ActiveCfg = Release|Any CPU
+		{05D04573-742D-43BA-AB4C-0D6626D0A317}.Release|x86.ActiveCfg = Release|Any CPU
+		{05D04573-742D-43BA-AB4C-0D6626D0A317}.Template|Any CPU.ActiveCfg = Debug|Any CPU
+		{05D04573-742D-43BA-AB4C-0D6626D0A317}.Template|x64.ActiveCfg = Debug|Any CPU
+		{05D04573-742D-43BA-AB4C-0D6626D0A317}.Template|x86.ActiveCfg = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1E2938EC-C957-4F1C-BF2A-42AED4764892}
+	EndGlobalSection
+EndGlobal
