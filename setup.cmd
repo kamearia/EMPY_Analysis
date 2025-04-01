@@ -1,4 +1,8 @@
 call setupEnv
+mkdir bin
+cd bin
+mkdir Release
+cd ..
 call setupSparseSolv
 call setupEMPY_Solver
 call setupEMPY_Field
