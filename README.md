@@ -1,41 +1,41 @@
-ƒCƒ“ƒXƒg[ƒ‹
+ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«
 
-EMPY_Analysis‚ÌƒCƒ“ƒXƒg[ƒ‹
+EMPY_Analysisã®ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«  
 
-1Dinstall directory‚ğì¬‚·‚é
->mkdir EMPY
->cd EMPY
+1ï¼install directoryã‚’ä½œæˆã™ã‚‹  
+mkdir EMPY  
+cd EMPY
 
-2.EMPY_Analysis directory‚ğ“Ç‚İ‚Ş
->git clone https://github.com/kamearia/EMPY_Analysis.git
->cd EMPY_Analysis
+2.EMPY_Analysis directoryã‚’èª­ã¿è¾¼ã‚€  
+git clone https://github.com/kamearia/EMPY_Analysis.git  
+cd EMPY_Analysis  
 
-3. pythonŠÂ‹«ì¬
->python -m venv my_env
->my_env\Scripts\activate
->pip install -r requirements.txt
+3. pythonç’°å¢ƒä½œæˆ  
+python -m venv my_env  
+my_env\Scripts\activate  
+pip install -r requirements.txt  
 
-‚SDJP_MAR‚“/SpaerseSolve
->call my_env\Scripts\activate
->git clone https://github.com/JP-MARs/SparseSolv.git
->mkdir build
->cmake -S SparseSolv -B build -G "Visual Studio 17 2022" -DPYBIND_EXPORT=ON -Dpybind11_DIR=" Install directory\EMPY_Analysis\my_env/Lib/site-packages/pybind11/share/cmake/pybind11"
->cmake --build build --config release 
->copy SparseSolv\Release\SparseSolvPy.cp310-win_amd64.pyd bin\Release\SparseSolvPy.pyd
->rd /s /q build
->rd /s /q SparseSolv
+ï¼”ï¼JP_MARï½“/SpaerseSolve  
+call my_env\Scripts\activate  
+git clone https://github.com/JP-MARs/SparseSolv.git  
+mkdir build  
+cmake -S SparseSolv -B build -G "Visual Studio 17 2022" -DPYBIND_EXPORT=ON -Dpybind11_DIR=" Install directory\EMPY_Analysis\my_env/Lib/site-packages/pybind11/share/cmake/pybind11"  
+cmake --build build --config release   
+copy SparseSolv\Release\SparseSolvPy.cp310-win_amd64.pyd bin\Release\SparseSolvPy.pyd  
+rd /s /q build  
+rd /s /q SparseSolv  
 
-5. 
-„setupEMPY_Field
+5.   
+setupEMPY_Field  
 
-6. 
-„setupEMPY_Solver
+6.   
+setupEMPY_Solver  
 
-‚VDjupyterÀs (EMPY_Solverg—pj
->jupyter notebook EddyCurrent/A-2_Phi_Potential_BathPlate_with_Reg.ipynb
+ï¼—ï¼jupyterå®Ÿè¡Œ (EMPY_Solverä½¿ç”¨ï¼‰  
+jupyter notebook EddyCurrent/A-2_Phi_Potential_BathPlate_with_Reg.ipynb
 
-Run->Run All Cells
+Run->Run All Cells  
 
-8.jupyterÀs (JP_MAR‚“/SparseSolveg—pj
-A-2 Phi_Potential_BathPlate_with_Reg.ipyn‚É‚¨‚¢‚ÄAcpp_solver="EMPY"‚ğAcpp_solver="JP_MARs"‚É•ÏX
-JP_MAR‚“/SparseSolv‚Å‚Íû‘©‚µ‚È‚¢‚±‚Æ‚ªŠm”F‚³‚ê‚éB
+8.jupyterå®Ÿè¡Œ (JP_MARï½“/SparseSolveä½¿ç”¨ï¼‰  
+A-2 Phi_Potential_BathPlate_with_Reg.ipynã«ãŠã„ã¦ã€cpp_solver="EMPY"ã‚’ã€cpp_solver="JP_MARs"ã«å¤‰æ›´  
+JP_MARï½“/SparseSolvã§ã¯åæŸã—ãªã„ã“ã¨ãŒç¢ºèªã•ã‚Œã‚‹ã€‚  
