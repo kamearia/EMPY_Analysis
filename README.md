@@ -1,5 +1,3 @@
-インストール
-
 EMPY_Analysisのインストール  
 
 1 install directoryを作成する  
