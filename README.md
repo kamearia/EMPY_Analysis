@@ -12,8 +12,8 @@ C:\...\EMPY> cd EMPY_Analysis
 
 3. python環境作成  
 C:\...\EMPY\EMPY_Analysis> python -m venv my_env  
-C:\...\EMPY\EMPY_Analysis> my_env\Scripts\activate  
-C:\...\EMPY\EMPY_Analysis> pip install -r requirements.txt  
+(my_env)C:\...\EMPY\EMPY_Analysis> my_env\Scripts\activate  
+(my_env)C:\...\EMPY\EMPY_Analysis> pip install -r requirements.txt  
 
 4. モジュールインストール  
 C:\...\EMPY\EMPY_Analysis> setup
