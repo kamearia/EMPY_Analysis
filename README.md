@@ -3,39 +3,36 @@
 EMPY_Analysisのインストール  
 
 1．install directoryを作成する  
-mkdir EMPY  
-cd EMPY
+C:\...> mkdir EMPY  
+C:\...> cd EMPY
 
 2.EMPY_Analysis directoryを読み込む  
-git clone https://github.com/kamearia/EMPY_Analysis.git  
-cd EMPY_Analysis  
+C:\...\EMPY> git clone https://github.com/kamearia/EMPY_Analysis.git  
+C:\...\EMPY> cd EMPY_Analysis  
 
 3. python環境作成  
-python -m venv my_env  
-my_env\Scripts\activate  
-pip install -r requirements.txt  
+C:\...\EMPY\EMPY_Analysis> python -m venv my_env  
+C:\...\EMPY\EMPY_Analysis> my_env\Scripts\activate  
+C:\...\EMPY\EMPY_Analysis> pip install -r requirements.txt  
 
-４．JP_MARｓ/SpaerseSolve  
-call my_env\Scripts\activate  
-git clone https://github.com/JP-MARs/SparseSolv.git  
-mkdir build  
-cmake -S SparseSolv -B build -G "Visual Studio 17 2022" -DPYBIND_EXPORT=ON -Dpybind11_DIR=" Install directory\EMPY_Analysis\my_env/Lib/site-packages/pybind11/share/cmake/pybind11"  
-cmake --build build --config release   
-copy SparseSolv\Release\SparseSolvPy.cp310-win_amd64.pyd bin\Release\SparseSolvPy.pyd  
-rd /s /q build  
-rd /s /q SparseSolv  
+4. モジュールインストール  
+C:\...\EMPY\EMPY_Analysis> setup
+以下のファイルが作成されたことを確認
+bin\Relsese\SparseSolvPy.pyd  
+bin\Relsese\EMPY_Solver.pyd
+bin\Relsese\EMPY_Field.pyd
 
-5.   
-setupEMPY_Field  
-
-6.   
-setupEMPY_Solver  
-
-７．jupyter実行 (EMPY_Solver使用）  
-jupyter notebook EddyCurrent/A-2_Phi_Potential_BathPlate_with_Reg.ipynb
+5. jupyter実行 (EMPY_Solver使用）  
+C:\...\EMPY\EMPY_Analysis> jupyter notebook "A-2_Phi_Potential_BathPlate_with_Reg.ipynb"
 
 Run->Run All Cells  
 
 8.jupyter実行 (JP_MARｓ/SparseSolve使用）  
-A-2 Phi_Potential_BathPlate_with_Reg.ipynにおいて、cpp_solver="EMPY"を、cpp_solver="JP_MARs"に変更  
+A-2 Phi_Potential_BathPlate_with_Reg.ipynにおいて、cpp_solver="EMPY"を、cpp_solver="JP_MARs"に変更 
+cpp_solver="EMPY"
+#cpp_solver="JP_MARs"
+-->
+cpp_solver="EMPY"  
+#cpp_solver="JP_MARs"
+Kernel->Restart Kernel and Run All Cells... 
 JP_MARｓ/SparseSolvでは収束しないことが確認される。  
