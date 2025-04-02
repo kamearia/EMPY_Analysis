@@ -30,7 +30,7 @@ A-2_Phi_Potential_BathPlate_with_Reg.ipynにおいて、cpp_solver="EMPY"を、c
 cpp_solver="EMPY"  
 #cpp_solver="JP_MARs"  
 -->  
-cpp_solver="EMPY"    
-#cpp_solver="JP_MARs"  
+#cpp_solver="EMPY"    
+cpp_solver="JP_MARs"  
 Kernel->Restart Kernel and Run All Cells...   
 JP_MARｓ/SparseSolvでは収束しないことが確認される。   
