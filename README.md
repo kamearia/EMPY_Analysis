@@ -16,7 +16,7 @@ C:\...\EMPY\EMPY_Analysis> python -m venv my_env
 (my_env)C:\...\EMPY\EMPY_Analysis> pip install -r requirements.txt  
 
 4. モジュールインストール  
-C:\...\EMPY\EMPY_Analysis> setup
+C:\...\EMPY\EMPY_Analysis> setup  
 以下のファイルが作成されたことを確認  
 bin\Relsese\SparseSolvPy.pyd    
 bin\Relsese\EMPY_Solver.pyd  
