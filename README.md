@@ -4,7 +4,7 @@ EMPY_Analysisのインストール
 
 1 install directoryを作成する  
 C:\...> mkdir EMPY  
-C:\...> cd EMPY
+C:\...> cd EMPY  
 
 2. EMPY_Analysis directoryを読み込む  
 C:\...\EMPY> git clone https://github.com/kamearia/EMPY_Analysis.git  
