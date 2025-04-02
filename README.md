@@ -16,7 +16,7 @@ C:\...\EMPY\EMPY_Analysis> python -m venv my_env
 (my_env)C:\...\EMPY\EMPY_Analysis> pip install -r requirements.txt  
 
 4. モジュールインストール  
-C:\...\EMPY\EMPY_Analysis> setup  
+(my_env)C:\...\EMPY\EMPY_Analysis> setup  
 以下のファイルが作成されたことを確認  
 bin\Relsese\SparseSolvPy.pyd    
 bin\Relsese\EMPY_Solver.pyd  
@@ -28,7 +28,7 @@ C:\...\EMPY\EMPY_Analysis> jupyter notebook "A-2_Phi_Potential_BathPlate_with_Re
 Run->Run All Cells  
 
 6. jupyter実行 (JP_MARｓ/SparseSolve使用）  
-A-2 Phi_Potential_BathPlate_with_Reg.ipynにおいて、cpp_solver="EMPY"を、cpp_solver="JP_MARs"に変更  
+A-2_Phi_Potential_BathPlate_with_Reg.ipynにおいて、cpp_solver="EMPY"を、cpp_solver="JP_MARs"に変更  
 cpp_solver="EMPY"  
 #cpp_solver="JP_MARs"  
 -->  
