@@ -10,7 +10,7 @@ C:\...\EMPY> cd EMPY_Analysis
 
 3. python環境作成  
 C:\...\EMPY\EMPY_Analysis> python -m venv my_env  
-(my_env)C:\...\EMPY\EMPY_Analysis> my_env\Scripts\activate  
+C:\...\EMPY\EMPY_Analysis> my_env\Scripts\activate  
 (my_env)C:\...\EMPY\EMPY_Analysis> pip install -r requirements.txt  
 
 4. モジュールインストール  
@@ -21,7 +21,7 @@ bin\Relsese\EMPY_Solver.pyd
 bin\Relsese\EMPY_Field.pyd  
 
 5. jupyter実行 (EMPY_Solver使用）  
-C:\...\EMPY\EMPY_Analysis> jupyter notebook "A-2_Phi_Potential_BathPlate_with_Reg.ipynb"  
+C:\...\EMPY\EMPY_Analysis> jupyter notebook "EddyCurrent\A-2_Phi_Potential_BathPlate_with_Reg.ipynb"  
 
 Run->Run All Cells  
 
