@@ -92,7 +92,8 @@ class MatrixSolver:
     def iccg_solve(cls,fes, gf, A, Bvec,  **kwargs):
         print("enter iccg_solve")
         default_values = {"tol": 1.E-10, "accel_factor":1.1, "max_iter":1000, "complex":False, 
-                          "logplot":False, "cpp_solver":"EMPY"}
+                          "logplot":False, "cpp_solver":"EMPY",
+                          "scaling":True}
         default_values.update(kwargs)
         tol=default_values["tol"]
         accel_factor=default_values["accel_factor"]
@@ -100,6 +101,7 @@ class MatrixSolver:
         ccomplex=default_values["complex"]
         logplot=default_values["logplot"]
         cpp_solver=default_values["cpp_solver"]
+        scaling=default_values["scaling"]
     
         asci = sp.csr_matrix (A.mat.CSR())
         #    A=None
@@ -130,7 +132,7 @@ class MatrixSolver:
             rows=None
             cols=None
             vals=None
-            #solver.SetScaling(True);
+            solver.SetScaling(scaling);
             #solver.SetMethod("ICCG")
             solver.SetEps(tol);
             solver.SetShiftParameter(accel_factor);

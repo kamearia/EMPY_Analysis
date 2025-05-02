@@ -367,3 +367,6 @@ my_env/
 !bin/Release/SparseSolvPy.pyd
 !bin/Release/EMPY_Solver.pyd
 !bin/Release/EMPY_Field.pyd
+
+*/.ipynb_checkpoints/
+*.vol
