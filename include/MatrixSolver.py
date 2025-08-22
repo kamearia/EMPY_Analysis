@@ -179,7 +179,7 @@ class MatrixSolver:
             solver = SparseSolvPy.MatSolvers()
             solver.setSaveBest(True)
             solver.setSaveLog(True)
-            solver.setDiagScale(True)
+            solver.setDiagScale(False)
             solver.setDirvegeType(1)
             solver.setBadDivCount(10)
             solver.solveICCG_py(len(fcut), tol, max_iter, accel_factor, mat, fcut, ucut, True)
