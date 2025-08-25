@@ -90,8 +90,10 @@ class MatrixSolver:
     
     @classmethod
     def iccg_solve(cls,fes, gf, A, Bvec,  **kwargs):
+        import time
         print("enter iccg_solve")
         default_values = {"tol": 1.E-10, "accel_factor":1.1, "max_iter":1000, "complex":False, 
+                          "divfac":10., "diviter":10,
                           "logplot":False, "cpp_solver":"EMPY",
                           "scaling":True}
         default_values.update(kwargs)
@@ -99,6 +101,8 @@ class MatrixSolver:
         accel_factor=default_values["accel_factor"]
         max_iter=default_values["max_iter"]
         ccomplex=default_values["complex"]
+        divfac=default_values["divfac"]
+        diviter=default_values["diviter"]
         logplot=default_values["logplot"]
         cpp_solver=default_values["cpp_solver"]
         scaling=default_values["scaling"]
@@ -136,8 +140,13 @@ class MatrixSolver:
             #solver.SetMethod("ICCG")
             solver.SetEps(tol);
             solver.SetShiftParameter(accel_factor);
-            solver.SetDivCriterion(10.,  10)
+            solver.SetDivCriterion(divfac,  diviter)
+            
+            start_time = time.perf_counter()           
             ucut=solver.Solve(fcut, ucut)
+            end_time = time.perf_counter()
+            elapsed_time = end_time - start_time
+            
             shift=solver.GetShiftParameter()
             print("shift parameter=", shift)
             log1 = solver.GetResidualLog()
@@ -182,8 +191,11 @@ class MatrixSolver:
             solver.setDiagScale(False)
             solver.setDirvegeType(1)
             solver.setBadDivCount(10)
+            
+            start_time = time.perf_counter()           
+            ucut=solver.Solve(fcut, ucut)
             solver.solveICCG_py(len(fcut), tol, max_iter, accel_factor, mat, fcut, ucut, True)
-
+            elapsed_time = end_time - start_time
             log1 = solver.getResidualLog_py()
 
         #print("log1  ",log1)
@@ -195,10 +207,10 @@ class MatrixSolver:
         np.array(gf.vec.FV(), copy=False)[fes.FreeDofs()] += ucut
     
         result = Acut.dot(ucut) - fcut 
-        norm = np.linalg.norm(result)/np.linalg.norm(fcut)
-        print("結果のノルム:", norm)
-        power=np.dot(fcut, ucut)
-        print("power= ", power)
+        #norm = np.linalg.norm(result)/np.linalg.norm(fcut)
+        print("ICCG calculation time (sec):", elapsed_time)
+        #power=np.dot(fcut, ucut)
+        #print("power= ", power)
     
         ucut=None
         mat=None

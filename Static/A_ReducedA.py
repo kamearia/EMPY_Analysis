@@ -7,9 +7,11 @@ sys.path.append('..\include')
 from MatrixSolver import MatrixSolver as solver 
 sys.path.append(r'..\bin\Release') 
 from EMPY_Field import *
-class A_ReducedA_Method():
-    def __init__(self,  model, coil,  **kwargs):  
-        self.Calc(model, coil, **kwargs)
+from Static_Method import Static_Method
+
+class A_ReducedA_Method(Static_Method):
+    def __init__(self,  model, coil,  **kwargs): 
+        super().__init__(model, coil,  **kwargs)
         
     def Calc(self, model, coil, **kwargs):
         default_values = {"feOrder":1,
@@ -20,7 +22,8 @@ class A_ReducedA_Method():
         boundaryCD=default_values["boundaryCD"]
 
         feOrder=self.feOrder
-        mesh=model.mesh
+        self.mesh=model.mesh
+        mesh=self.mesh
         
         import time
         start_time = time.perf_counter()
@@ -30,7 +33,8 @@ class A_ReducedA_Method():
         total_boundary=model.total_boundary
         reduced_boundary=model.reduced_boundary
         Bn0_boundary=model.Bn0_boundary
-        Mu=model.Mu
+        self.Mu=model.Mu
+        Mu=self.Mu
         
         #coil=UNIF(0,0,1,0)
         Av=Afield(coil)
@@ -70,11 +74,14 @@ class A_ReducedA_Method():
         with TaskManager():
             f.Assemble()
 
+        gf=self.Solve(fesA, a, f)
+        """
         with TaskManager():
             a.Assemble()
         gfA = GridFunction(fesA)   #Clear gfA
         gfA=solver.iccg_solve(fesA, gfA, a, f.vec.FV(), tol=1.e-8, max_iter=1000, accel_factor=0, divfac=100, diviter=10,
                      scaling=True, complex=False,logplot=True)
+        """
 
         fesAt=HCurl(mesh, order=feOrder, definedon=total_region, dirichlet=Bn0_boundary, nograds=True)
         fesAr=HCurl(mesh, order=feOrder, definedon=reduced_region, dirichlet=Bn0_boundary, nograds=True)
@@ -94,11 +101,16 @@ class A_ReducedA_Method():
         elapsed_time = end_time - start_time
 
         print("feOrder=", feOrder,"  ", "ndof=",fesA.ndof,"  ")
+        self.CalcResult(model, BField)
+        """
         mip = mesh(0,0,0)
         print("center magnetic field = ", BField(mip),"  ")
         Wm=Integrate(BField*BField/Mu*dx("iron"), mesh)
         print("magnetic energy=", Wm,"  ")
-        print(f"経過時間: {elapsed_time:.4f} 秒  ")
+
 
         print("**** B field ****")
         Draw (BField, mesh, order=feOrder, min=0., max=5.0, deformation=False) 
+        """
+
+        print(f"経過時間: {elapsed_time:.4f} 秒  ")
