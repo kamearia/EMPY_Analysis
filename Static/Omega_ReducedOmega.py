@@ -7,10 +7,11 @@ sys.path.append('..\include')
 from MatrixSolver import MatrixSolver as solver 
 sys.path.append(r'..\bin\Release') 
 from EMPY_Field import *
+from Static_Method import Static_Method
 
-class Omega_ReducedOmega_Method():
+class Omega_ReducedOmega_Method(Static_Method):
     def __init__(self,  model, coil,  **kwargs):  
-        self.Calc(model, coil,  **kwargs)
+        super().__init__(model, coil,  **kwargs)
         
     def Calc(self, model, coil, **kwargs):
         default_values = {"feOrder":1,
@@ -33,7 +34,8 @@ class Omega_ReducedOmega_Method():
         reduced_boundary=model.reduced_boundary
         Bn0_boundary=model.Bn0_boundary
         Ht0_boundary=model.Ht0_boundary
-        Mu=model.Mu
+        self.Mu=model.Mu
+        Mu=self.Mu
 
         #field=UNIF(0,0,1,0)
         Ov=Ofield(coil)
@@ -47,13 +49,13 @@ class Omega_ReducedOmega_Method():
         Os = CoefficientFunction([Os_dic[mat] for mat in mesh.GetMaterials()])
 
         if boundaryCD=="Ht0":
-            fesOmega=H1(mesh, order=feOrder, dirichlet=reduced_boundary+"|"+Ht0_boundary)
+            fes=H1(mesh, order=feOrder, dirichlet=reduced_boundary+"|"+Ht0_boundary)
         elif boundaryCD=="Bn0":
-            fesOmega=H1(mesh, order=feOrder, dirichlet=Ht0_boundary)
+            fes=H1(mesh, order=feOrder, dirichlet=Ht0_boundary)
     
-        omega,psi = fesOmega.TnT() 
-        gfOmega = GridFunction(fesOmega)
-        a= BilinearForm(fesOmega)
+        omega,psi = fes.TnT() 
+        gfOmega = GridFunction(fes)
+        a= BilinearForm(fes)
         a +=Mu*(grad(omega)*grad(psi))*dx
         with TaskManager():
             a.Assemble()
@@ -65,20 +67,20 @@ class Omega_ReducedOmega_Method():
         gfOmega.Set(Ov, BND, mesh.Boundaries(total_boundary))
         #gfOmega.Set(surfaceOmega, BND, mesh.Boundaries(total_boundary))
 
-        f = LinearForm(fesOmega)
+        f = LinearForm(fes)
         f +=Mu*grad(gfOmega)*grad(psi)*dx(reduced_region)
         with TaskManager():
             f.Assemble() 
         #remove components of the Dirichlet boundary
-        fcut = np.array(f.vec.FV())[fesOmega.FreeDofs()]
-        np.array(f.vec.FV(), copy=False)[fesOmega.FreeDofs()] = fcut
+        fcut = np.array(f.vec.FV())[fes.FreeDofs()]
+        np.array(f.vec.FV(), copy=False)[fes.FreeDofs()] = fcut
 
         # Add Neumann condition terms
         f += (normal*Bv)*psi*ds(total_boundary)
         with TaskManager():
             f.Assemble()
-        gfOmega = GridFunction(fesOmega)   #Clear gfOmega
-        gfOmega=solver.iccg_solve(fesOmega, gfOmega, a, f.vec.FV(), tol=1.e-8, max_iter=1000, accel_factor=0, divfac=100, diviter=10,
+        gfOmega = GridFunction(fes)   #Clear gfOmega
+        gfOmega=solver.iccg_solve(fes, gfOmega, a, f.vec.FV(), tol=1.e-8, max_iter=1000, accel_factor=0, divfac=100, diviter=10,
                      scaling=True, complex=False,logplot=True)
 
         fesOt=H1(mesh, order=feOrder, definedon=total_region)
@@ -99,14 +101,18 @@ class Omega_ReducedOmega_Method():
 
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
-
-        print("feOrder=", feOrder,"  ", "ndof=",fesOmega.ndof,"  ")
+        print("feOrder=", feOrder,"  ", "ndof=",fes.ndof,"  ")
+        self.CalcResult(model, BField)
+        """   
         mip = mesh(0,0,0)
         print("center magnetic field = ", BField(mip),"  ")
         Wm=Integrate(BField*BField/Mu*dx("iron"), mesh)
         print("magnetic energy=", Wm,"  ")
-        print(f"経過時間: {elapsed_time:.4f} 秒  ")
+
 
         #Draw ((Ot+Or+Os)*mu, mesh, order=3, min=0., max=1.0, deformation=False)  
         print("**** B field ****")
         Draw (BField, mesh, order=feOrder, min=0, max=5, deformation=False)
+        """
+
+        print(f"経過時間: {elapsed_time:.4f} 秒  ")

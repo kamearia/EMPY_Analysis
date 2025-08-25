@@ -7,10 +7,12 @@ sys.path.append('..\include')
 from MatrixSolver import MatrixSolver as solver 
 sys.path.append(r'..\bin\Release') 
 from EMPY_Field import *
+from Static_Method import Static_Method
 
-class A_ReducedOmega_Method():
+class A_ReducedOmega_Method(Static_Method):
     def __init__(self,  model, coil,  **kwargs):  
-        self.Calc(model, coil,  **kwargs)
+        super().__init__(model, coil,  **kwargs)
+        #self.Calc(model, coil,  **kwargs)
         
     def Calc(self, model, coil,  **kwargs):
         default_values = {"feOrder":1,
@@ -21,7 +23,8 @@ class A_ReducedOmega_Method():
         boundaryCD=default_values["boundaryCD"]
 
         feOrder=self.feOrder
-        mesh=model.mesh
+        self.mesh=model.mesh
+        mesh=self.mesh
       
         import time
         start_time = time.perf_counter()
@@ -32,7 +35,8 @@ class A_ReducedOmega_Method():
         reduced_boundary=model.reduced_boundary
         Bn0_boundary=model.Bn0_boundary
         Ht0_boundary=model.Ht0_boundary
-        Mu=model.Mu
+        self.Mu=model.Mu
+        Mu=self.Mu
         
         #coil=UNIF(0,0,1,0)
         Av=Afield(coil)
@@ -65,12 +69,14 @@ class A_ReducedOmega_Method():
         with TaskManager():
             f.Assemble()
 
+        gf=self.Solve(fes, a, f)
+        """
         with TaskManager():
             a.Assemble()
         gf=GridFunction(fes)
-        gf=solver.iccg_solve(fes, gf, a, f.vec.FV(), tol=1.e-8, max_iter=1000, accel_factor=0, divfac=100, diviter=10,
+        gf=solver.iccg_solve(fes, gf, a, f.vec.FV(), tol=1.e-8, max_iter=1000, accel_factor=0, divfac=100, diviter=100,
                      scaling=True, complex=False,logplot=True)
-  
+        """
         gfA, gfOmega=gf.components
         BField=mu0*grad(gfOmega)+curl(gfA)+Bs
 
@@ -78,6 +84,8 @@ class A_ReducedOmega_Method():
         elapsed_time = end_time - start_time
 
         print("feOrder=", feOrder,"  ", "ndof=",fes.ndof,"  ")
+        self.CalcResult(model, BField)
+        """
         mip = mesh(0,0,0)
         print("center magnetic field = ", BField(mip),"  ")
         Wm=Integrate(BField*BField/Mu*dx("iron"), mesh)
@@ -89,3 +97,22 @@ class A_ReducedOmega_Method():
         #Draw (gfOmega, mesh, order=feOrder, deformation=False) 
         print("**** B field ****")
         Draw (BField, mesh, order=feOrder, min=0., max=5.0, deformation=False) 
+        """
+        print(f"経過時間: {elapsed_time:.4f} 秒  ")
+    """
+    def CalcResult(self):
+        BField=self.BField
+        mesh=self.mesh
+        mip = self.mesh(0,0,0)
+        print("center magnetic field = ", BField(mip),"  ")
+        Wm=Integrate(BField*BField/self.Mu*dx("iron"), mesh)
+        print("magnetic energy=", Wm,"  ")
+
+
+        from ngsolve.webgui import Draw
+        #print("**** Omega field ****")
+        #Draw (gfOmega, mesh, order=feOrder, deformation=False) 
+        print("**** B field ****")
+        Draw (BField, mesh, order=self.feOrder, min=0., max=5.0, deformation=False) 
+    """
+        
