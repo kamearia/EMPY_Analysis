@@ -121,7 +121,7 @@ class MatrixSolver:
         vals = np.ravel(vals)
         dim=fcut.size
         size= (len(rows)-dim)/2-dim
-        print('Dof=',dim, '   matrix size=', size)
+        print('Dof=',dim, '   Nonzeros=', len(rows))
         if dim ==0: return gf
 
         #if platform.system() == 'Windows':
