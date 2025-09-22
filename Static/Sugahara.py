@@ -1,0 +1,17 @@
+sphere0 = Sphere(Pnt(0, 0, 0), 0.1).bc('outer')
+sphere1 = Sphere(Pnt(0, 0, 0), 30.0).bc('outer')
+shape = Glue([sphere0, sphere1])
+shape.solids[0].mat('mat')
+shape.solids[0].maxh = 0.01
+shape.solids[0].faces.col = (1,0,0)
+shape.solids[1].mat('air')
+shape.solids[1].faces.col = (0,0,1)
+#DrawGeo(shape, clipping = { "pnt" : (0.0,-0.1,0), "vec" : (0,1,0) })
+mesh = Mesh(OCCGeometry(shape).GenerateMesh(maxh=5.0, grading=0.1))
+mesh.Curve(2)
+from ngsolve.webgui import Draw
+fes = H1(mesh, order=2)
+J = CoefficientFunction(x)
+Draw(J, mesh, clipping = { "pnt" : (0.0,-0.1,0), "vec" : (0,1,0) })
+vtk = VTKOutput(mesh, coefs=[J], names=["J"], legacy=True, filename="J", subdivision=1)
+vtk.Do()

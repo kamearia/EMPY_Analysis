@@ -63,6 +63,11 @@ class EMPY_COIL():
         if len(self.coils)==1: self.geo=coil.geo
         else : self.geo= self.geo+coil.geo
 
+class EMPY_UNIF():
+    def __init__(self, Bx, By, Bz, Aoption):
+        self.field=EMPY_Field.UNIF(Bx, By,Bz, Aoption)
+        self.geo=None
+
     
 
         

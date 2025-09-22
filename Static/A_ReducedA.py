@@ -10,10 +10,10 @@ from EMPY_Field import *
 from Static_Method import Static_Method
 
 class A_ReducedA_Method(Static_Method):
-    def __init__(self,  model, coil,  **kwargs): 
-        super().__init__(model, coil,  **kwargs)
+    def __init__(self,  model,  **kwargs): 
+        super().__init__(model, **kwargs)
         
-    def Calc(self, model, coil, **kwargs):
+    def Calc(self, **kwargs):
         default_values = {"feOrder":1,
                           "boundaryCD":"Bn0", 
                           "Kelvin": "off"
@@ -25,12 +25,12 @@ class A_ReducedA_Method(Static_Method):
         self.Kelvin=Kelvin
 
         feOrder=self.feOrder
-        self.mesh=model.mesh
         mesh=self.mesh
         
         import time
         start_time = time.perf_counter()
 
+        model=self.model
         total_region=model.total_region
         reduced_region=model.reduced_region
         total_boundary=model.total_boundary
@@ -38,15 +38,18 @@ class A_ReducedA_Method(Static_Method):
         Bn0_boundary=model.Bn0_boundary
         self.Mu=model.Mu
         Mu=self.Mu
+        if self.jomega:
+            self.Sigma=model.Sigma
 
         self.total_region=total_region
         self.reduced_region=reduced_region
         
         #coil=UNIF(0,0,1,0)
+        coil=model.coil.field
         Av=Afield(coil)
         Bv=Bfield(coil)
-        mu=4.e-7*math.pi
-        Hv=Bv/mu
+        mu0=4.e-7*math.pi
+        Hv=Bv/mu0
         zero=(0,0,0)
 
         Bs_dic = {"iron":zero, "A_domain":zero, "Omega_domain":Bv, "Kelvin":zero, 'default':zero}
@@ -56,14 +59,14 @@ class A_ReducedA_Method(Static_Method):
 
         if Kelvin=="off":
             if boundaryCD=="Bn0":
-                fesA=HCurl(mesh, order=feOrder, type1=True, nograds=True, dirichlet=Bn0_boundary+'|'+reduced_boundary)
+                fesA=HCurl(mesh, order=feOrder, type1=True, nograds=True, dirichlet=Bn0_boundary+'|'+reduced_boundary, complex=self.jomega)
             elif boundaryCD=="Ht0":
-                fesA=HCurl(mesh, order=feOrder, type1=True, nograds=True, dirichlet=Bn0_boundary) 
+                fesA=HCurl(mesh, order=feOrder, type1=True, nograds=True, dirichlet=Bn0_boundary, complex=self.jomega) 
 
         else:
-            fesA=HCurl(mesh, order=feOrder, type1=True, nograds=True, dirichlet=Bn0_boundary) 
+            fesA=HCurl(mesh, order=feOrder, type1=True, nograds=True, dirichlet=Bn0_boundary, complex=self.jomega) 
             fesA=Periodic(fesA)
-            
+
         self.fes=fesA
         A,N = fesA.TnT() 
         gfA = GridFunction(fesA)
@@ -71,6 +74,9 @@ class A_ReducedA_Method(Static_Method):
         a= BilinearForm(fesA)
         a +=1/Mu*curl(A)*curl(N)*dx(total_region)
         a +=1/Mu*curl(A)*curl(N)*dx(reduced_region)
+
+        if self.jomega:
+            a +=self.s*model.Sigma*A*N*dx(model.conductive_region)
 
         if Kelvin=="on":
             rs=self.model.rKelvin
@@ -84,12 +90,13 @@ class A_ReducedA_Method(Static_Method):
         gfA.Set(Av, BND, mesh.Boundaries(total_boundary))
         f = LinearForm(fesA)
         f +=1/Mu*curl(gfA)*curl(N)*dx(reduced_region)
+        """
         with TaskManager():
             f.Assemble()    
         #remove components of the Dirichlet boundary
         fcut = np.array(f.vec.FV())[fesA.FreeDofs()]
         np.array(f.vec.FV(), copy=False)[fesA.FreeDofs()] = fcut
-
+        """
         # Add Neumann condition terms
         f += Cross(N.Trace(),Hv)*normal*ds(total_boundary)
         with TaskManager():
@@ -104,8 +111,8 @@ class A_ReducedA_Method(Static_Method):
                      scaling=True, complex=False,logplot=True)
         """
 
-        fesAt=HCurl(mesh, order=feOrder, definedon=total_region, dirichlet=Bn0_boundary, nograds=True)
-        fesAr=HCurl(mesh, order=feOrder, definedon=reduced_region+"|Kelvin", dirichlet=Bn0_boundary, nograds=True)
+        fesAt=HCurl(mesh, order=feOrder, definedon=total_region, dirichlet=Bn0_boundary, nograds=True, complex=self.jomega)
+        fesAr=HCurl(mesh, order=feOrder, definedon=reduced_region+"|Kelvin", dirichlet=Bn0_boundary, nograds=True, complex=self.jomega)
         At=GridFunction(fesAt)
         Arr=GridFunction(fesAr)
         Axr=GridFunction(fesAr)
@@ -122,11 +129,13 @@ class A_ReducedA_Method(Static_Method):
         BField=Bt+Br+Bs
         self.Br=Br
         self.Bt=Bt
-        
-
-
-        print("feOrder=", feOrder,"  ", "ndof=",fesA.ndof,"  ")
-        self.CalcResult(model, BField)
+        Draw(BField, mesh)
+        if self.jomega: 
+            self.JField=-self.s*model.Sigma*At
+        else:
+            JField=0
+    
+        self.CalcResult(model, BField, self.JField)
         """
         mip = mesh(0,0,0)
         print("center magnetic field = ", BField(mip),"  ")
@@ -148,37 +157,60 @@ class A_ReducedA_Method(Static_Method):
         reduced_region=self.reduced_region
         Mu=self.Mu
 
-        fesHd = HCurl(mesh, order=feOrder-1, type1=True, nograds=True, definedon=total_region)
-        Hd=GridFunction(fesHd, "flux")
+        fesH = HCurl(mesh, order=feOrder-1, type1=True, nograds=True, definedon=total_region, complex=self.jomega)
+        Hd=GridFunction(fesH, "flux")
         H = 1/Mu*self.Bt
         Hd.Set(H)
-        err=Mu*(H-Hd)*(H-Hd)
-        eta = Integrate(err, mesh, VOL, element_wise=True)
+        dH=H-Hd
+        if self.jomega:
+            err=Mu*(dH.real*dH.real+dH.imag*dH.imag)/4
+        else:
+            err=Mu*dH*dH/2
+        eta_t = Integrate(err, mesh, VOL, element_wise=True)
 
+        if self.jomega:
+            fesJ = HDiv(mesh, order=feOrder-1,  definedon=self.model.conductive_region, complex=self.jomega)
+            Jd=GridFunction(fesJ)
+            J=self.JField
+            Jd.Set(J)
+            dJ=J-Jd
+            err=1/(self.Sigma*self.omega)*(dJ.real*dJ.real+dJ.imag*dJ.imag)/2
+            eta_j = Integrate(err, mesh, VOL, element_wise=True)
+            print("max(eta_t)=", max(eta_t), "  max(eta_j)=", max(eta_j)) 
+            eta_t=eta_t+eta_j
+            
         #gfur=self.Or
-        fsHdr = HCurl(mesh, order=feOrder-1, type1=True, nograds=True,  definedon=reduced_region)
-        Hdr=GridFunction(fsHdr, "flux")
-        Hr = 1/Mu*self.Br
-        Hdr.Set(Hr)
-        err_r=Mu*(Hr-Hdr)*(Hr-Hdr)
-        eta_r = Integrate(err_r, mesh, VOL, element_wise=True) 
+        fesH = HCurl(mesh, order=feOrder-1, type1=True, nograds=True,  definedon=reduced_region, complex=self.jomega)
+        Hd=GridFunction(fesH, "flux")
+        H = 1/Mu*self.Br
+        Hd.Set(H)
+        dH=H-Hd
+        if self.jomega:
+            err=Mu*(dH.real*dH.real+dH.imag*dH.imag)/4
+        else:
+            err=Mu*dH*dH/2
+        eta_r = Integrate(err, mesh, VOL, element_wise=True) 
 
         if self.Kelvin=="on":
-            fkBdr = HCurl(mesh, order=feOrder-1, type1=True, nograds=True,  definedon="Kelvin")
-            Hdk=GridFunction(fkBdr, "flux")
+            fesH = HCurl(mesh, order=feOrder-1, type1=True, nograds=True,  definedon="Kelvin", complex=self.jomega)
+            Hd=GridFunction(fesH, "flux")
             
             rs=self.model.rKelvin
             xs=2*rs
             r=sqrt((x-xs)*(x-xs)+y*y+z*z)
             fac=rs*rs/r/r
-            Hk=1/(Mu*fac)*self.Br
-            Hdk.Set(Hk)
-            err_rk=(Mu*fac)*(Hk-Hdk)*(Hk-Hdk)
-            eta_rk =Integrate(err_rk, mesh, VOL, element_wise=True) 
-            print(" maxerr = ", max(eta), max(eta_r), max(eta_rk) )
-            eta_r = eta_r+eta_rk
+            H=1/(Mu*fac)*self.Br
+            Hd.Set(H)
+            dH=H-Hd
+            if self.jomega:
+                err=Mu*(dH.real*dH.real+dH.imag*dH.imag)/4
+            else:
+                err=Mu*dH*dH/2
+            eta_k =Integrate(err, mesh, VOL, element_wise=True) 
+            print(" maxerr = ", max(eta_t), max(eta_r), max(eta_k) )
+            eta_r = eta_r+eta_k
 
-        error=eta+eta_r
+        error=eta_t+eta_r
         maxerr = max(error)
         print ("ndof=", self.fes.ndof, " maxerr = ", maxerr)
         return maxerr, error
