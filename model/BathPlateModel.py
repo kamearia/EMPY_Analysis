@@ -148,7 +148,8 @@ class BathPlateModel():
                           "boxz":400e-3, 
                           "div_thick":1,
                           "sigma": 0.3278e8, 
-                          "msize": meshsize.moderate
+                          "msize": meshsize.moderate,
+                          "rKelvin":0
                          }
         default_values.update(kwargs)
         holes=default_values["holes"]
@@ -159,13 +160,23 @@ class BathPlateModel():
         wz=default_values["wz"]
         div_thick=default_values["div_thick"]
         msize=default_values["msize"]
+        rKelvin=default_values["rKelvin"]
+
+        sig=default_values["sigma"]
+        curveOrder=3
+        self.curveOrder=curveOrder
+        mu = 4*math.pi*1e-7
+        self.up_down=2.*bz
+
+        if rKelvin !=0:
+            outerBox="Sphere"
+            bx=rKelvin
+            self.rKelvin=rKelvin
+
         print(default_values["name"], "   holes:", holes, "   Thickness:", wz)
         print("boxx= ", bx," boxy= ", by, " boxz= ",bz)
         print("div_thick= ", div_thick)
-        sig=default_values["sigma"]
-        curveOrder=3
-        mu = 4*math.pi*1e-7
-        self.up_down=2.*bz
+            
 
         wx=110e-3
         wy=60e-3
@@ -191,13 +202,23 @@ class BathPlateModel():
             curveOrder=1
         else:outer=Sphere(Pnt(0,0,0),bx)
         outer.faces.name="reduced_boundary"
-        reduced=outer-total
+        reduced=outer#-total
         reduced.mat("reduced_region")
-        air=total-conductor
+        air=total #-conductor
         air.mat("air")
 
-        model=Glue([conductor,air, reduced])  
+        if rKelvin !=0:
+            rk=rKelvin
+            kcenter=rk*2.5
+            self.kcenter=kcenter
+            external_domain = Sphere(Pnt(kcenter,0,0.), r=rk)
+            external_domain.mat("Kelvin")
 
+            external_domain.faces[0].Identify(outer.faces[0], "ud0",  IdentificationType.PERIODIC)
+            model=Glue([conductor,air, reduced, external_domain])
+        else:
+            model=Glue([conductor,air, reduced])
+            
         self.conductor=conductor
         self.model=model
 
@@ -210,10 +231,12 @@ class BathPlateModel():
         self.mesh=mesh
         
         #self.sigmaDomain="to_side|from_side"
-        self.sigma_d={"conductor":sig,  "air":0, "reduced_region":0, 'default':0}
-        self.mu_d={"conductor":mu,  "air":mu, "reduced_region":mu, 'default':mu}
-        self.Sigma = CoefficientFunction([self.sigma_d[mat] for mat in mesh.GetMaterials()])  # デフォルトの物性値
-        self.Mu = CoefficientFunction([self.mu_d[mat] for mat in mesh.GetMaterials()])  # デフォルトの物性値
+        self.sigma_d={"conductor":sig,  "air":0, "reduced_region":0, "Kelvin":0,'default':0}
+        self.rho_d={"conductor":1./sig,  "air":0, "reduced_region":0, "Kelvin":0, 'default':0}
+        self.mu_d={"conductor":mu,  "air":mu, "reduced_region":mu, "Kelvin":mu, 'default':mu}
+        self.Sigma = CoefficientFunction([self.sigma_d[mat] for mat in mesh.GetMaterials()]) 
+        self.Mu = CoefficientFunction([self.mu_d[mat] for mat in mesh.GetMaterials()])  
+        self.Rho = CoefficientFunction([self.rho_d[mat] for mat in mesh.GetMaterials()]) 
         #self.mu=4.e-7*math.pi
         self.conductor_boundary="conductor_boundary"
         self.conductive_region="conductor"
@@ -227,6 +250,8 @@ class BathPlateModel():
         self.total_boundary="total_boundary"
         self.reduced_boundary="reduced_boundary"
         self.total_air_region="air"
+        self.Bn0_boundary=""
+        self.Ht0_boundary=""
 
         coil=Prob3Coil()
         self.coil=coil

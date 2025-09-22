@@ -24,6 +24,7 @@ def Prob7Coil():
     block=EMPY_BLOCK( current, gp_Pnt(x0+w2,y0-w1,z0), gp_Pnt(x0+w2,y0+w1,z0), 
                             gp_Vec(0,0,b), gp_Vec(a,0,0) )
     coils.Add(block)
+
     arc=EMPY_ARC( current, rc, gp_Pnt(x0+w1, y0+w1,z0), 2*a, 2*b,  0, 90)
     coils.Add(arc)
     block=EMPY_BLOCK( current, gp_Pnt(x0+w1,y0+w2,z0), gp_Pnt(x0-w1,y0+w2,z0),
@@ -41,7 +42,8 @@ def Prob7Coil():
     block=EMPY_BLOCK( current, gp_Pnt(x0-w1,y0-w2,z0), gp_Pnt(x0+w1,y0-w2,z0), 
                             gp_Vec(0,0,b), gp_Vec(0,-a,0) )
     coils.Add(block)
+    
     arc=EMPY_ARC( current, rc, gp_Pnt(x0+w1, y0-w1,z0), 2*a, 2*b,  270, 360)
     coils.Add(arc)
-
+    
     return coils
