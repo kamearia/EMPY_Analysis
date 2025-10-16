@@ -3,7 +3,7 @@ from ngsolve import *
 from ngsolve.webgui import Draw
 import numpy as np
 import sys
-sys.path.append('..\include')
+sys.path.append(r'..\include')
 from MatrixSolver import MatrixSolver as solver 
 sys.path.append(r'..\bin\Release') 
 from EMPY_Field import *

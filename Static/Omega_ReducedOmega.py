@@ -3,17 +3,17 @@ from ngsolve import *
 from ngsolve.webgui import Draw
 import numpy as np
 import sys
-sys.path.append('..\include')
+sys.path.append(r'..\include')
 from MatrixSolver import MatrixSolver as solver 
 sys.path.append(r'..\bin\Release') 
 from EMPY_Field import *
 from Static_Method import Static_Method
 
 class Omega_ReducedOmega_Method(Static_Method):
-    def __init__(self,  model, coil,  **kwargs):  
-        super().__init__(model, coil,  **kwargs)
+    def __init__(self,  model, **kwargs):  
+        super().__init__(model,  **kwargs)
         
-    def Calc(self, model, coil, **kwargs):
+    def Calc(self, **kwargs):
         default_values = {"feOrder":1,
                           "boundaryCD":"Bn0", 
                           "Kelvin": "off"
@@ -25,6 +25,7 @@ class Omega_ReducedOmega_Method(Static_Method):
         self.Kelvin=Kelvin
 
         feOrder=self.feOrder
+        model=self.model
         mesh=model.mesh
         self.mesh=mesh
         
@@ -45,6 +46,7 @@ class Omega_ReducedOmega_Method(Static_Method):
         self.reduced_region=reduced_region
 
         #field=UNIF(0,0,1,0)
+        coil=model.coil.field
         Ov=Ofield(coil)
         Bv=Bfield(coil)
         mu0=4.e-7*math.pi
@@ -64,6 +66,11 @@ class Omega_ReducedOmega_Method(Static_Method):
         else:
             fes=H1(mesh, order=feOrder, dirichlet=Ht0_boundary)
             fes=Periodic(fes)
+
+        #dofLimit=1.0e6
+        if fes.ndof > self.dofLimit:
+            print(" fespace Dof >  dofLimit, DOF=", fes.ndof)
+            return 0
             
         self.fes=fes
         omega,psi = fes.TnT() 
@@ -129,14 +136,16 @@ class Omega_ReducedOmega_Method(Static_Method):
 
         Bt=grad(Ot)*Mu
         Or=Orr-Oxr
-        print("*** Omega ***")
-        Draw(Or, mesh)
+        #print("*** Omega ***")
+        #Draw(Or, mesh)
         
         Br=(grad(Orr)-grad(Oxr))*mu0
         BField=Bt+Br+Bs
+        self.BField=BField
+        self.JField=0
 
         print("feOrder=", feOrder,"  ", "ndof=",fes.ndof,"  ")
-        self.CalcResult(model, BField)
+        #self.CalcResult(model, BField)
 
         #Draw (Ot, mesh, order=3)  
         #Draw (Or, mesh, order=3) 
@@ -158,6 +167,7 @@ class Omega_ReducedOmega_Method(Static_Method):
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
         print(f"経過時間: {elapsed_time:.4f} 秒  ")
+        return 1
         
     def CalcError(self):
         mesh=self.mesh

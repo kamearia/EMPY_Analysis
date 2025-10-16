@@ -7,10 +7,10 @@ import platform
 #if platform.system() == 'Windows':
 #if cpp_solver=="EMPY":
     #sys.path.append(r'C:\EMSolution\EMSolPy3\x64\Release') 
-sys.path.append(r'C:\EMSolution\EMSolPy5\EMPY_Analysis\bin\Release') 
+sys.path.append(r'..\bin\Release') 
 import EMPY_Solver
 #else:
-sys.path.append(r'C:\EMSolution\EMSolPy5\EMPY_Analysis\bin\Release')
+sys.path.append(r'..\bin\Release')
 import SparseSolvPy
     
 class MatrixSolver:
