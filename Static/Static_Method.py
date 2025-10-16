@@ -1,16 +1,20 @@
 from ngsolve import *
 import sys
-sys.path.append('..\include')
+sys.path.append(r'..\include')
 from MatrixSolver import MatrixSolver as solver 
 import math
+from ngsolve.webgui import Draw
 
 class Static_Method():
     def __init__(self,  model,  **kwargs):
         default_values = {"jomega":False,
                           "freq":0,
+                          "dofLimit":1.e6,
                          }
         default_values.update(kwargs)
+
         self.jomega=default_values["jomega"]
+        self.dofLimit=default_values["dofLimit"]
         if self.jomega:
             self.freq=default_values["freq"]
             self.omega=2.*math.pi*self.freq
@@ -20,10 +24,11 @@ class Static_Method():
         self.mesh=model.mesh
         #self.Calc(model, coil,  **kwargs)
 
+
     #def Calc(self, model, coil,  **kwargs):
     #    return
 
-    def CalcResult(self, model, plotBFieldonLine=False, drawFields=True, pltBField=True):
+    def CalcResult(self, model, plotBFieldonLine=False, drawFields=True, pltBField=False, plotResults=True):
         BField=self.BField
         JField=self.JField
         mesh=model.mesh
@@ -32,11 +37,11 @@ class Static_Method():
 
         if self.jomega==False:
             Wm=Integrate(BField*BField/self.Mu*dx("iron"), mesh)/2
-            print(" Average magnetic energy in conductor=")
+            print(" Average magnetic energy in conductor=", Wm)
         else:
-            Wm=Integrate(BField*BField/self.Mu/2.*dx(model.conductive_region), mesh)/2.
+            Wm=Integrate(BField*BField/self.Mu/2.*dx(model.conductive_region), mesh)
             #WJ=Integrate((JField.real*JField.real+JField.imag*JField.imag)/model. Sigma*dx(model.conductive_region), mesh) /2
-            WJ=Integrate((JField*JField)/model.Sigma*dx(model.conductive_region), mesh) /2
+            WJ=Integrate((JField*JField)/model.Sigma*dx(model.conductive_region), mesh) 
             print(" Magnetic energy in conductor=", Wm, " Joule loss= ", WJ)
         
         from ngsolve.webgui import Draw
@@ -44,14 +49,16 @@ class Static_Method():
         #Draw (gfOmega, mesh, order=feOrder, deformation=False) 
         if drawFields:
             if self.jomega==False:
-                print("**** B field ****")
-                Draw (BField, mesh, order=self.feOrder, min=0., max=5.0, deformation=False) 
+                clipping_plane= (0, 1, 0, 0)
+                Draw (BField, mesh, order=self.feOrder, min=0., max=5.0, deformation=False, 
+                      clipping = { "pnt" : (0.0,0.001,0), "vec" : (0,1,0) })
             else:
                 if pltBField:
                     print("**** B field (real)****")
                     self.PlotBField(BField, 0)
                     print("**** B field (imag)****")
                     self.PlotBField(BField, -90)
+
                     print("**** J field (real)****")
                     self.PlotJphi(JField, 0, 0)
                     print("**** J field (imag)****")
@@ -61,42 +68,70 @@ class Static_Method():
                     Draw (BField.real, mesh, order=self.feOrder, deformation=False) 
                     print("**** B field (imag)****")
                     Draw (BField.imag, mesh, order=self.feOrder, deformation=False) 
+                    
                     print("**** J field (real)****")
                     Draw (JField.real, mesh, order=self.feOrder) #,  subdivision=mesh.Materials(model.total_region)) 
                     print("**** J field (imag)****")
                     Draw (JField.imag, mesh, order=self.feOrder) #, subdivision=mesh.Materials(model.total_region)) 
 
-        if plotBFieldonLine:
-            #self.PlotBFieldonLine(mesh, BField)
-            self.model.PlotBFieldonLine(mesh, BField)
+
+        if plotResults:
+            self.model.PlotResults(mesh, BField, JField, self.freq)
+            #self.model.PlotJ(JField, 0)
+            #self.model.PlotJ(JField, -90)
             
-    def Solve(self, fes, a,f, tol=1.e-8):
+    def Solve(self, fes, a,f, tol=1.e-8, divfac=10, diviter=10):
         with TaskManager():
             a.Assemble()
         gf=GridFunction(fes)
-        gf=solver.iccg_solve(fes, gf, a, f.vec.FV(), tol=tol, max_iter=1000, accel_factor=0, divfac=10, diviter=10,
+        gf=solver.iccg_solve(fes, gf, a, f.vec.FV(), tol=tol, max_iter=1000, accel_factor=0, divfac=divfac, diviter=diviter,
                      scaling=True, complex=self.jomega,logplot=True)  
         return gf
 
-    def Refine(self, maxerr, elmErrors):
+    def Refine(self, maxerr, elmErrors, **kwargs):
+        default_values = {"adaptive":True,
+                          "errorRatio":0.25,
+                         }
+        default_values.update(kwargs)
+        adaptiveRefine=default_values["adaptive"]
+        errorRatio=default_values["errorRatio"]
+        
         mesh=self.mesh
-        error=elmErrors
-        """
-        elms=0
-        for el in mesh.Elements():
-            criterion=error[el.nr] > 0.50*maxerr
-            if criterion==True:
-                mesh.SetRefinementFlag(el, True)
-                elms =elms+1
-            else:
-                mesh.SetRefinementFlag(el, False)
-        print("Number of selected elements to refime mesh =", elms)
-        """
+        if adaptiveRefine:
+            error=elmErrors
+            elms=0
+            for el in mesh.Elements():
+                criterion=error[el.nr] > errorRatio*maxerr
+                if criterion==True:
+                    mesh.SetRefinementFlag(el, True)
+                    elms =elms+1
+                else:
+                    mesh.SetRefinementFlag(el, False)
+            print("Number of selected elements to refime mesh =", elms)
+
         curveOrder=self.model.curveOrder
         mesh.Refine()
+        """
+        temp_filename = "temp_mesh_after_refine.vol"
+        mesh.ngmesh.Save(temp_filename)
+        mesh = Mesh(temp_filename)
+        os.remove(temp_filename)
+        """
+        #from netgen.meshing import MeshingParameters
+        #mp = MeshingParameters()
+        #print(dir(mp))
+        #mp.optimize=True
+        #mp.optimize3d=True
+        #mp.min_face_angle = 0.15
+        #mesh.ngmesh.OptimizeVolumeMesh(mp)
+        #mesh = Mesh(mesh.ngmesh)
         mesh.Curve(curveOrder)
+        self.mesh=mesh
+        self.model.mesh=mesh
+        
         print("Refined mesh: nv=", mesh.nv, " nedge=", mesh.nedge, " nfacet=", mesh.nfacet, " ne=",mesh.ne) 
-
+        Draw(mesh)
+ 
     def GetB(self, X, Z, BField, phase):
         import numpy as np
         mesh=self.model.mesh
@@ -141,8 +176,8 @@ class Static_Method():
     def PlotBField(self, BField, phase=0):
         import numpy as np
         import matplotlib.pyplot as plt
-        a=1
-        f=0.1
+        a=self.model.radius
+        f=self.freq
         ngrid=50
 
         mesh=self.model.mesh
@@ -169,8 +204,8 @@ class Static_Method():
     def PlotJphi(self, JField, phase=0, phi=0):
         import numpy as np
         import matplotlib.pyplot as plt
-        a=0.999
-        f=0.1
+        a=0.999*self.model.radius
+        f=self.freq
         ngrid=50
         mesh=self.model.mesh
         r_grid = np.linspace(0, a, ngrid)
@@ -191,34 +226,11 @@ class Static_Method():
         plt.grid(True)
         plt.tight_layout()
         plt.show()
-    """
-    def PlotBFieldonLine(self, mesh, BField):
-        import matplotlib.pylab as plt
-        x0=0.055
-        y0=0
-        z0=6.35e-3/2+0.5e-3
-        dx=2*x0/100
-        x=x0
-        y=y0
-        z=z0
-        xp=[]
-        ypreal=[]
-        ypimag=[]
-        for n in range(101):
-            pnt=mesh(x,y,z)
-            xp.append(x)
-            ypreal.append(BField(pnt)[2].real)
-            ypimag.append(BField(pnt)[2].imag)
-            x=x-dx
 
-        plt.plot(xp, ypreal )  
-        plt.xlabel("x")  # Add x-axis label
-        plt.plot(xp, ypimag ) 
-        plt.xlabel("x")  # Add x-axis label
-        plt.ylabel("Bz")  # Add y-axis label
-        plt.show()  
-    """
 
+
+        
+   
 
         
         

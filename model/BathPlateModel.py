@@ -4,7 +4,7 @@ from ngsolve import TaskManager
 import math
 from ngsolve import *
 import sys
-sys.path.append('..\COIL\include')
+sys.path.append(r'..\COIL\include')
 from Prob3Coil import Prob3Coil
 
 from ngsolve import *
@@ -258,6 +258,14 @@ class BathPlateModel():
         self.model=self.model-coil.geo
         self.model=Glue([self.model,coil.geo])
 
+        if self.coil.geo :
+            self.geo=model-self.coil.geo
+            self.geo=Glue([self.geo,self.coil.geo])
+
+        plotGeo=conductor*Box((-1,0,-1), (1,1,1))
+        
+        self.plotMesh = Mesh(OCCGeometry(plotGeo).GenerateMesh(maxh=1.e-3))
+
     def ReducedField(self, Bv, zero):
         Bs_dic = { "reduced_region":Bv, "total": zero, 'default':zero,
                   "conductor":zero, "air":zero}
@@ -270,3 +278,85 @@ class BathPlateModel():
     def GetMesh(self):
         return self.mesh
 
+    def PlotBFieldonLine(self, mesh, BField):
+        import matplotlib.pylab as plt
+        x0=0.055
+        y0=0
+        z0=6.35e-3/2+0.5e-3
+        dx=2*x0/100
+        x=x0
+        y=y0
+        z=z0
+        xp=[]
+        ypreal=[]
+        ypimag=[]
+        for n in range(101):
+            pnt=mesh(x,y,z)
+            xp.append(x)
+            ypreal.append(BField(pnt)[2].real)
+            ypimag.append(BField(pnt)[2].imag)
+            x=x-dx
+
+        plt.plot(xp, ypreal )  
+        plt.xlabel("x")  # Add x-axis label
+        plt.plot(xp, ypimag ) 
+        plt.xlabel("x")  # Add x-axis label
+        plt.ylabel("Bz")  # Add y-axis label
+        plt.show()  
+
+    def PlotJ(self, JField, phase=0):
+        import numpy as np
+        import matplotlib.pyplot as plt
+        eps=0.01e-3
+        z=6.35e-3/2-eps
+        nxgrid=55
+        nygrid=30
+        x_grid=np.linspace(-55e-3,55e-3, nxgrid)
+        y_grid=np.linspace(-30e-3,30e-3, nygrid)
+        X, Y= np.meshgrid(x_grid, y_grid)
+        Jx, Jy, Jz=self.GetJ(X, Y, z, JField, phase)
+
+        scale=10e-3
+        plt.figure(figsize=(110e-3/scale, 60e-3/scale))
+        #plt.quiver(X, Y, Jx, Jy, np.sqrt(Jx**2 + Jy**2 + Jz**2), cmap='viridis')
+        #plt.pcolormesh(X, Y, np.sqrt(Jx**2 + Jy**2 + Jz**2), cmap='jet')
+        #plt.quiver(X, Y, Jx, Jy, np.sqrt(Jx**2 + Jy**2 + Jz**2), cmap='jet')
+        # 流線（Streamlines）の描画
+        plt.streamplot(
+            X, Y, Jx, Jy,
+            color=np.sqrt(Jx**2 + Jy**2 + Jz**2), # マグニチュードで流線の色を変化させる
+            cmap='jet',    # カラーマップを指定
+            linewidth=1.5,     # 流線の幅
+            density=1.5,       # 流線の密度（値が大きいほど線が増えます）
+            arrowsize=1.5      # 流線上の方向を示す矢印のサイズ
+        )
+        plt.colorbar(label='Curent density [A/m^2]')
+        plt.title(f'Magnetic Field, Phase={phase} deg')
+        plt.xlabel('x [m]')
+        plt.ylabel('y [m]')
+        plt.axis('equal')
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+
+    def GetJ(self, X, Y, z, JField, phase):
+        import numpy as np
+        mesh=self.mesh
+        ex=exp(1j*phase*math.pi/180.)
+        N=X.shape[0]
+        M=X.shape[1]
+        Jx=np.zeros((N, M))
+        Jy=np.zeros((N, M))
+        Jz=np.zeros((N, M))
+        for n in range(N):
+            for m in range(M):
+                x=X[n][m]
+                y=Y[n][m]
+                mip = mesh(x,y,z)
+                vx=JField(mip)[0]*ex
+                vy=JField(mip)[1]*ex
+                vz=JField(mip)[2]*ex
+                Jx[n][m]=vx.real
+                Jy[n][m]=vy.real
+                Jz[n][m]=vz.real
+        return Jx, Jy, Jz

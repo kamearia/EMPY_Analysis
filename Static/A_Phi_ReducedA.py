@@ -3,7 +3,7 @@ from ngsolve import *
 from ngsolve.webgui import Draw
 import numpy as np
 import sys
-sys.path.append('..\include')
+sys.path.append(r'..\include')
 from MatrixSolver import MatrixSolver as solver 
 sys.path.append(r'..\bin\Release') 
 from EMPY_Field import *
@@ -29,12 +29,15 @@ class A_Phi_ReducedA_Method(Static_Method):
         hreg=H+Cross(normal,grad(gfu).Trace())
         return hreg   
         
+
     def Calc(self,  **kwargs):
         default_values = {"feOrder":1,
                           "boundaryCD":"Bn0", 
                           "Kelvin": "off",
                           "regularization": False,
-                          "tol":1.e-8
+                          "tol":1.e-8,
+                          "divfac":10.,
+                          "diviter":10
                          }
         default_values.update(kwargs)
         self.feOrder=default_values["feOrder"]
@@ -42,6 +45,8 @@ class A_Phi_ReducedA_Method(Static_Method):
         Kelvin=default_values["Kelvin"]
         regularization=default_values["regularization"]
         tol=default_values["tol"]
+        divfac=default_values["divfac"]
+        diviter=default_values["diviter"]
         self.Kelvin=Kelvin
         
         feOrder=self.feOrder
@@ -62,11 +67,13 @@ class A_Phi_ReducedA_Method(Static_Method):
         Mu=self.Mu
         if self.jomega:
             self.Sigma=model.Sigma
+        self.KelvinType=self.model.KelvinType
 
         self.total_region=total_region
         self.reduced_region=reduced_region
         self.total_boundary=total_boundary
         self.Ht0_boundary=Ht0_boundary
+
         
         #coil=UNIF(0,0,1,0)
         coil=model.coil.field
@@ -82,7 +89,7 @@ class A_Phi_ReducedA_Method(Static_Method):
         As_dic = {"iron":zero, "conductor":zero, "air":zero, "hole":zero, "A_domain":zero, "Omega_domain":Av, "reduced_region":Av, "Kelvin":zero, 'default':zero}
         As = CoefficientFunction([As_dic[mat] for mat in mesh.GetMaterials()])
 
-        if Kelvin=="off":
+        if Kelvin=="off" or self.KelvinType==2:
             if boundaryCD=="Bn0":
                 fesA=HCurl(mesh, order=feOrder, type1=True, nograds=True, dirichlet=Bn0_boundary+'|'+reduced_boundary, complex=self.jomega)
             elif boundaryCD=="Ht0":
@@ -96,8 +103,8 @@ class A_Phi_ReducedA_Method(Static_Method):
         fes=fesA*fesPhi
         (A,phi), (N, psi) = fes.TnT() 
 
-        dofLimit=1.0e6
-        if fes.ndof > dofLimit:
+        #dofLimit=1.0e6
+        if fes.ndof > self.dofLimit:
             print(" fespace Dof >  dofLimit, DOF=", fes.ndof)
             return 0
 
@@ -116,13 +123,27 @@ class A_Phi_ReducedA_Method(Static_Method):
             a +=self.s*model.Sigma*(A+grad(phi))*(N+grad(psi))*dx(model.conductive_region)
 
         if Kelvin=="on":
-            rs=self.model.rKelvin
-            xs=self.model.kcenter
-            r=sqrt((x-xs)*(x-xs)+y*y+z*z)
-            fac=rs*rs/r/r
-            a +=1/(Mu*fac) *curl(A)*curl(N)*dx("Kelvin")
+            if self.KelvinType==1:
+                rs=self.model.rKelvin
+                xs=self.model.kcenter
+                r=sqrt((x-xs)*(x-xs)+y*y+z*z)
+                fac=rs*rs/r/r
+                a +=1/(Mu*fac) *curl(A)*curl(N)*dx("Kelvin")
+            elif self.KelvinType==2:
+                ra=self.model.rKelvin
+                rb=self.model.rKelvin2
+                r=sqrt(x*x+y*y+z*z)
+                rvec=CF((x, y, z))/r
+                mut=Mu*(rb-ra)*ra/((rb-r)*(rb-r))
+                mun=Mu*(rb-ra)*ra/(r*r)
+                B=curl(A)
+                BB=curl(N)
+                Bn=(B*rvec)*rvec
+                Nn=(BB*rvec)*rvec
+                Bt=B-Bn
+                Nt=BB-Nn
+                a +=(1/mun*Bn*Nn + 1/mut*Bt*Nt)*dx("Kelvin", bonus_intorder=4)
 
-        
         # Calculate Dirichlet condition terms
         gfA.Set(Av, BND, mesh.Boundaries(total_boundary))
         #Draw(gfA, mesh)
@@ -145,7 +166,7 @@ class A_Phi_ReducedA_Method(Static_Method):
         with TaskManager():
             f.Assemble()
 
-        gf=self.Solve(fes, a, f, tol)
+        gf=self.Solve(fes, a, f, tol, divfac, diviter)
         gfA, gfPhi=gf.components
         """
         with TaskManager():
@@ -155,8 +176,15 @@ class A_Phi_ReducedA_Method(Static_Method):
                      scaling=True, complex=False,logplot=True)
         """
 
+
         fesAt=HCurl(mesh, order=feOrder, definedon=total_region, dirichlet=Bn0_boundary, nograds=True, complex=self.jomega)
+        #if Kelvin=="on": fesAt=Periodic(fesAt)
         fesAr=HCurl(mesh, order=feOrder, definedon=reduced_region+"|Kelvin", dirichlet=Bn0_boundary, nograds=True, complex=self.jomega)
+        #if Kelvin=="on": fesAr=Periodic(fesAr)
+
+        #At=GridFunction(fesAt)
+        #mesh.Refine()
+
         At=GridFunction(fesAt)
         Arr=GridFunction(fesAr)
         Axr=GridFunction(fesAr)
@@ -165,43 +193,31 @@ class A_Phi_ReducedA_Method(Static_Method):
         Axr.Set(Av, BND, mesh.Boundaries(total_boundary))
 
         Bt=curl(At)
-
         Ar=Arr-Axr
         #print("*** Ar ***")
         #Draw(Ar, mesh)
         
         Br=curl(Arr)-curl(Axr)
         #Draw(Br.real, mesh)
-        #Draw(Br.imag, mesh)
         BField=Bt+Br+Bs
         self.BField=BField
         self.Br=Br
         self.Bt=Bt
-        #Draw(BField.real, mesh)
 
         if self.jomega: 
             self.JField=-self.s*model.Sigma*(At+grad(gfPhi))
 
         else:
             JField=0
-    
-        #self.CalcResult(model, BField, self.JField)
-        """
-        mip = mesh(0,0,0)
-        print("center magnetic field = ", BField(mip),"  ")
-        Wm=Integrate(BField*BField/Mu*dx("iron"), mesh)
-        print("magnetic energy=", Wm,"  ")
-
-
-        print("**** B field ****")
-        Draw (BField, mesh, order=feOrder, min=0., max=5.0, deformation=False) 
-        """
+        
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
         print(f"経過時間: {elapsed_time:.4f} 秒  ")
+        
         return 1
 
 
+    
     def CalcError(self):
         mesh=self.mesh
         feOrder=self.feOrder
@@ -211,7 +227,8 @@ class A_Phi_ReducedA_Method(Static_Method):
 
         fesH = HCurl(mesh, order=feOrder-1, type1=True, nograds=True, definedon=total_region,  dirichlet=self.Ht0_boundary, complex=self.jomega)
         Hd=GridFunction(fesH, "flux")
-        H = 1/Mu*self.Bt
+        #H = 1/Mu*self.Bt
+        H = 1/Mu*self.BField
         Hd.Set(H)
         dH=H-Hd
         if self.jomega:
@@ -227,7 +244,7 @@ class A_Phi_ReducedA_Method(Static_Method):
             J=self.JField
             Jd.Set(J)
             dJ=J-Jd
-            err=self.model.Rho/self.omega*(dJ.real*dJ.real+dJ.imag*dJ.imag)/2
+            err=1/self.model.Sigma/self.omega*(dJ.real*dJ.real+dJ.imag*dJ.imag)/2
             eta_j = Integrate(err, mesh, VOL, definedon=mesh.Materials(self.model.conductive_region), element_wise=True)
             print("max(eta_t)=", max(eta_t), "  max(eta_j)=", max(eta_j)) 
             eta_t=eta_t+eta_j
@@ -253,20 +270,43 @@ class A_Phi_ReducedA_Method(Static_Method):
         if self.Kelvin=="on":
             fesH = HCurl(mesh, order=feOrder-1, type1=True, nograds=True,  definedon="Kelvin", dirichlet=self.Ht0_boundary, complex=self.jomega)
             Hd=GridFunction(fesH, "flux")
-            
-            rs=self.model.rKelvin
-            xs=self.model.kcenter
-            r=sqrt((x-xs)*(x-xs)+y*y+z*z)
-            fac=rs*rs/r/r
-            H=1/(Mu*fac)*self.Br
-            Hd.Set(H)
-            dH=H-Hd
 
-            if self.jomega:
-                err=Mu*(dH.real*dH.real+dH.imag*dH.imag)/4
+            if self.KelvinType==1:
+                rs=self.model.rKelvin
+                xs=self.model.kcenter
+                r=sqrt((x-xs)*(x-xs)+y*y+z*z)
+                fac=rs*rs/r/r
+                H=1/(Mu*fac)*self.Br
+                Hd.Set(H)
+                dH=H-Hd
+                if self.jomega:
+                    err=Mu*fac*(dH.real*dH.real+dH.imag*dH.imag)/4
+                else:
+                    err=Mu*fac*dH*dH/2
 
-            else:
-                err=Mu*dH*dH/2
+            elif self.KelvinType==2:
+                ra=self.model.rKelvin
+                rb=self.model.rKelvin2
+                r=sqrt(x*x+y*y+z*z)
+                rvec=CF((x, y, z))/r
+                mut=Mu*(rb-ra)*ra/((rb-r)*(rb-r))
+                mun=Mu*(rb-ra)*ra/(r*r)
+                B=self.Br
+                Bn=(B*rvec)*rvec
+                Bt=B-Bn
+                H=1/mut*Bt + 1/mun*Bn
+                Hd.Set(H)
+                dH=H-Hd
+                dHn=(dH*rvec)*rvec
+                dHt=dH-dHn
+                if self.jomega:
+                    err=dH.real*B.real+dH.imag*B.imag
+                    #err=mun*(dHn.real*dHn.real+dHn.imag*dHn.imag)+ mut* (dHt.real*dHt.real+dHt.imag*dHt.imag)
+                    #err=err/4
+                else:
+                    err=dH*B/2
+                    #err=(mun*dHn*dHn + mut*dHt*dHt )/2                
+                 
 
             eta_k =Integrate(err, mesh,  VOL, definedon=mesh.Materials("Kelvin"), element_wise=True) 
             print(" maxerr = ", max(eta_t), max(eta_r), max(eta_k) )

@@ -9,7 +9,10 @@ from EMPY_COIL import *
 sys.path.append(r'..\bin\Release') 
 from EMPY_Field import *
 
-#from netgen.meshing import ngsglobals
+from netgen.meshing import MeshingParameters
+#from netgen.meshing import ngsglobals # 追記
+#from netgen.libngpy import ngsglobals
+#from netgen import ngsglobals 
 
 #import math
 class SphereMesh():
@@ -25,7 +28,9 @@ class SphereMesh():
                           "type":0,
                           "curveOrder":1,
                           "rOuter": 5,
-                          "rKelvin":5
+                          "rKelvin":5,
+                          "KelvinType": 1,
+                          "rKelvin2": 10,
                          }
         
         default_values.update(kwargs)
@@ -37,12 +42,17 @@ class SphereMesh():
         type=default_values["type"]
         curveOrder=default_values["curveOrder"]   
         rKelvin=default_values["rKelvin"] 
+        self.KelvinType=default_values["KelvinType"] 
+        self.rKelvin2=default_values["rKelvin2"] 
+        
         rOuter=default_values["rOuter"]  
         self.curveOrder=curveOrder
         self.rKelvin=rKelvin
         if rKelvin !=0: rOuter=rKelvin
-        
-        iron = Sphere(Pnt(0,0,0.0), r=1)*Box((0,0,0), (1,1,1))
+
+        self.radius=1.
+        r= self.radius
+        iron = Sphere(Pnt(0,0,0.0), r=r)*Box((0,0,0), (r,r,r))
         iron.faces.Min(X).name="Bn0"
         iron.faces.Min(Y).name="Bn0"
         iron.faces.Min(Z).name="Ht0"
@@ -79,42 +89,83 @@ class SphereMesh():
         Omega_domain.faces.Min(X).name="Bn0"
         Omega_domain.faces.Min(Y).name="Bn0"
         Omega_domain.faces.Min(Z).name="Ht0"
-        Omega_domain.faces[0].name="Omega0"
-        #Omega_domain.faces.Max(Y).name="Omega0"
-        #Omega_domain.faces.Max(X).name="Omega0"
-        #Omega_domain.faces.Max(Z).name="Omega0"
-        #Omega_domain.faces.Min(Z).Identify(Omega_domain.faces.Max(Z), "bot-top", type=IdentificationType.CLOSESURFACES)
         Omega_domain.mat("Omega_domain")
-        #Omega_domain.maxh=rk/5
+        if self.KelvinType !=2:
+            Omega_domain.faces[0].name="Omega0"
 
         if rKelvin !=0:
-            rk=rKelvin
-            kcenter=rk*2
-            self.kcenter=kcenter
-            external_domain = Sphere(Pnt(kcenter,0,0.), r=rk)*Box((kcenter,0,0), (kcenter+rk,rk,rk))
-            external_domain.faces.Min(X).name="Bn0"
-            external_domain.faces.Min(Y).name="Bn0"
-            external_domain.faces.Min(Z).name="Ht0"
-            external_domain.mat("Kelvin")
-            #external_domain.maxh=rk/5
-            external_domain.faces[0].Identify(Omega_domain.faces[0], "ud0",  IdentificationType.PERIODIC)
-            geo=Glue([iron, A_domain, Omega_domain, external_domain])
+            if self.KelvinType==1:
+                rk=rKelvin
+                kcenter=rk*2
+                self.kcenter=kcenter
+                external_domain = Sphere(Pnt(kcenter,0,0.), r=rk)*Box((kcenter,0,0), (kcenter+rk,rk,rk))
+                external_domain.faces.Min(X).name="Bn0"
+                external_domain.faces.Min(Y).name="Bn0"
+                external_domain.faces.Min(Z).name="Ht0"
+                external_domain.mat("Kelvin")
+                #external_domain.maxh=rk/5
+                external_domain.faces[0].Identify(Omega_domain.faces[0], "ud0",  IdentificationType.PERIODIC)
+                geo=Glue([iron, A_domain, Omega_domain, external_domain])
+
+
+            
+            elif self.KelvinType==2:
+                b=self.rKelvin2
+                external_domain = Sphere(Pnt(0,0,0.), r=b)*Box((0,0,0), (b,b,b))
+                external_domain.faces.Min(X).name="Bn0"
+                external_domain.faces.Min(Y).name="Bn0"
+                external_domain.faces.Min(Z).name="Ht0"
+                external_domain.faces[0].name="Omega0"
+                external_domain.mat("Kelvin")
+                geo=Glue([iron, A_domain, Omega_domain, external_domain])
         else:
              geo=Glue([iron, A_domain, Omega_domain]) 
             
         occgeo =OCCGeometry(geo)
+        
         # 最小角度を0.1ラジアン（約5.7度）に設定
         #ngsglobals.min_angle = 0.1 
         
+        # OCCGeometryから MeshingParameters オブジェクトを取得し、設定を適用
+        #mp = MeshingParameters(grading=0.2, optimize3d="m")
+        #mp = MeshingParameters()
+        # 最小角度を0.15ラジアン（約8.6度）に設定
+        # 3Dテトラヘドラの品質を保証するための Netgen パラメータ
+        #mp.minimal_angle = 0.15 
+        
+        # メッシュ生成後に最適化を有効にする
+        #mp.optimize = True 
+        
+        # 3D最適化を明示的に有効にする（optimize=Trueに包括されていることが多いが、念のため）
+        #mp.optimize3d = True
+        """
+        # 🚀 修正点 2: maxh (メッシュサイズ) も MeshingParameters に設定する
+        # self.msize が meshsize.moderate のような Enum の場合、.value で数値を取得
+        if isinstance(self.msize, meshsize):
+            maxh = self.msize.value
+        else:
+            maxh = self.msize
+        """
+        #mp = MeshingParameters(maxh=5, grading=0.2, optimize3d="m")
+        #mp = MeshingParameters(grading=0.2, optimize3d="m")
+      
+
         #ngmesh = occgeo.GenerateMesh(self.msize, quad_dominated=False)
         #ngmesh = occgeo.GenerateMesh(grading=0.05)
+        MIN_ANGLE = 0.15
+        """
+        """
+        #ngmesh = occgeo.GenerateMesh(self.msize, meshing_parameters=mp)#, minimal_angle=MIN_ANGLE, optimize3d=True,)
         ngmesh = occgeo.GenerateMesh(self.msize)
+        #ngmesh = occgeo.GenerateMesh(mp=mp)
         #ngmesh.ZRefine("bot-top", [])
         print("curveOrder=", curveOrder)
         mesh = Mesh(ngmesh).Curve(curveOrder)
+        #mesh.Optimize()
 
         self.geo=geo
         self.mesh=mesh
+        
         if type==0:
             self.reduced_region="Omega_domain"
             self.total_region="iron|A_domain"
@@ -141,7 +192,7 @@ class SphereMesh():
         self.Rho = CoefficientFunction([rho_d[mat] for mat in mesh.GetMaterials()])  # デフォルトの物性値
                
         print("nv=", mesh.nv, " nedge=", mesh.nedge, " nfacet=", mesh.nfacet, " ne=",mesh.ne)
-
+        
     def Print(self):
         geo=self.geo
         mesh=self.mesh

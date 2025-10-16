@@ -3,6 +3,11 @@ from netgen.csg import *
 from netgen.occ import *
 from ngsolve import *
 from ngsolve.webgui import Draw
+import sys
+sys.path.append(r'..\COIL\include')
+from EMPY_COIL import *
+sys.path.append(r'..\bin\Release') 
+from EMPY_Field import *
 
 #import math
 class CubeMesh():
@@ -16,7 +21,8 @@ class CubeMesh():
                           "ndiv":5,
                           "type":0,
                           "curveOrder":1,
-                          "rKelvin":5
+                          "outerBox":5,
+                          "rKelvin":0
                          }
         
         default_values.update(kwargs)
@@ -27,6 +33,7 @@ class CubeMesh():
         type=default_values["type"]
         curveOrder=default_values["curveOrder"]   
         rKelvin=default_values["rKelvin"]   
+        outerBox=default_values["outerBox"]  
         self.curveOrder=curveOrder
         self.rKelvin=rKelvin
         
@@ -41,7 +48,7 @@ class CubeMesh():
         iron.mat("iron")
         #iron.maxh=1.0/ndiv
  
-        A_domain = Box((0,0,0),(1.2, 1.2, 1.2))
+        A_domain = Box((0,0,0),(1.5, 1.5, 1.5))
         #A_domain.faces.Min(Z).Identify(A_domain.faces.Max(Z), "bot-top", type=IdentificationType.CLOSESURFACES)
 
         A_domain.faces.Min(X).name="Bn0"
@@ -56,32 +63,44 @@ class CubeMesh():
             A_domain.mat("Omega_domain")
         #A_domain.maxh=1.0/ndiv
 
+        if rKelvin==0:
 
-        rk=rKelvin
-        Omega_domain=Sphere(Pnt(0,0,0.0), r=rk)*Box((0,0,0), (rk,rk,rk))
-        #Omega_domain.faces[0].Identify(Omega_domain.faces[4], "ud0",  IdentificationType.PERIODIC)
-        Omega_domain.faces.Min(X).name="Bn0"
-        Omega_domain.faces.Min(Y).name="Bn0"
-        Omega_domain.faces.Min(Z).name="Ht0"
-        #Omega_domain.faces.Max(Y).name="Omega0"
-        #Omega_domain.faces.Max(X).name="Omega0"
-        #Omega_domain.faces.Max(Z).name="Omega0"
-        #Omega_domain.faces.Min(Z).Identify(Omega_domain.faces.Max(Z), "bot-top", type=IdentificationType.CLOSESURFACES)
-        Omega_domain.mat("Omega_domain")
-        Omega_domain.maxh=rk/5
+            Omega_domain=Box((0,0,0), (outerBox,outerBox,outerBox))
+            Omega_domain.faces.Min(X).name="Bn0"
+            Omega_domain.faces.Min(Y).name="Bn0"
+            Omega_domain.faces.Min(Z).name="Ht0"                
+            Omega_domain.faces.Max(Y).name="Omega0"
+            Omega_domain.faces.Max(X).name="Omega0"
+            Omega_domain.faces.Max(Z).name="Omega0"  
+            Omega_domain.mat("Omega_domain")
+            #Omega_domain.maxh=rk/5
+            geo=Glue([iron, A_domain, Omega_domain])
 
-        rk=rKelvin
-        center=rk*2
-        external_domain = Sphere(Pnt(center,0,0.), r=rk)*Box((center,0,0), (center+rk,rk,rk))
-        external_domain.faces.Min(X).name="Bn0"
-        external_domain.faces.Min(Y).name="Bn0"
-        external_domain.faces.Min(Z).name="Ht0"
-        external_domain.mat("Kelvin")
-        external_domain.maxh=rk/5
+        if rKelvin:
+            rk=rKelvin
+            Omega_domain=Sphere(Pnt(0,0,0.0), r=rk)*Box((0,0,0), (rk,rk,rk))
+            #Omega_domain.faces[0].Identify(Omega_domain.faces[4], "ud0",  IdentificationType.PERIODIC)
+            Omega_domain.faces.Min(X).name="Bn0"
+            Omega_domain.faces.Min(Y).name="Bn0"
+            Omega_domain.faces.Min(Z).name="Ht0"
+            #Omega_domain.faces.Max(Y).name="Omega0"
+            #Omega_domain.faces.Max(X).name="Omega0"
+            #Omega_domain.faces.Max(Z).name="Omega0"
+            #Omega_domain.faces.Min(Z).Identify(Omega_domain.faces.Max(Z), "bot-top", type=IdentificationType.CLOSESURFACES)
+            Omega_domain.mat("Omega_domain")
+            #Omega_domain.maxh=rk/5
 
-        external_domain.faces[0].Identify(Omega_domain.faces[0], "ud0",  IdentificationType.PERIODIC)
-        
-        geo=Glue([iron, A_domain, Omega_domain, external_domain])
+            rk=rKelvin
+            center=rk*2
+            external_domain = Sphere(Pnt(center,0,0.), r=rk)*Box((center,0,0), (center+rk,rk,rk))
+            external_domain.faces.Min(X).name="Bn0"
+            external_domain.faces.Min(Y).name="Bn0"
+            external_domain.faces.Min(Z).name="Ht0"
+            external_domain.mat("Kelvin")
+            #external_domain.maxh=rk/5
+
+            external_domain.faces[0].Identify(Omega_domain.faces[0], "ud0",  IdentificationType.PERIODIC)
+            geo=Glue([iron, A_domain, Omega_domain, external_domain])
         
         occgeo =OCCGeometry(geo)
         #ngmesh = occgeo.GenerateMesh(self.msize, quad_dominated=False)
@@ -103,6 +122,8 @@ class CubeMesh():
         self.reduced_boundary="Omega0"
         self.Bn0_boundary="Bn0"
         self.Ht0_boundary="Ht0"
+
+        self.coil=EMPY_UNIF(0,0,1,0)
 
         import math
         mur=self.mur
