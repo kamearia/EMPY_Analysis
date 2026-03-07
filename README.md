@@ -21,16 +21,10 @@ bin\Relsese\EMPY_Solver.pyd
 bin\Relsese\EMPY_Field.pyd  
 
 5. jupyter実行 (EMPY_Solver使用）  
-C:\...\EMPY\EMPY_Analysis> jupyter notebook "EddyCurrent\A-2_Phi_Potential_BathPlate_with_Reg.ipynb"  
+(my_env)C:\...\EMPY\EMPY_Analysis> jupyter notebook "EddyCurrent\A-2_Phi_Potential_BathPlate_with_Reg.ipynb"  
 
 Run->Run All Cells  
+保存された図と一致する結果を確認される。
 
-6. jupyter実行 (JP_MARｓ/SparseSolve使用）  
-A-2_Phi_Potential_BathPlate_with_Reg.ipynにおいて、cpp_solver="EMPY"を、cpp_solver="JP_MARs"に変更  
-cpp_solver="EMPY"  
-#cpp_solver="JP_MARs"  
--->  
-#cpp_solver="EMPY"    
-cpp_solver="JP_MARs"  
-Kernel->Restart Kernel and Run All Cells...   
-JP_MARｓ/SparseSolvでは収束しないことが確認される。   
+6. Jupyter Labの実行
+(my_env)C:\...\EMPY\EMPY_Analysis>jupyter lab
