@@ -362,7 +362,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-em_env/
 
 !bin/Release/SparseSolvPy.pyd
 !bin/Release/EMPY_Solver.pyd
@@ -373,3 +372,6 @@ em_env/
 .ipynb_checkpoints/
 bin/Release_*
 *.pdf
+
+my_env/
+

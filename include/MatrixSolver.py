@@ -94,7 +94,9 @@ class MatrixSolver:
         print("enter iccg_solve")
         default_values = {"tol": 1.E-10, "accel_factor":1.1, "max_iter":1000, "complex":False, 
                           "divfac":10., "diviter":10,
-                          "logplot":False, "cpp_solver":"EMPY",
+                          "logplot":False, 
+                          "logout":False,
+                          "cpp_solver":"EMPY",
                           "scaling":True}
         default_values.update(kwargs)
         tol=default_values["tol"]
@@ -104,6 +106,7 @@ class MatrixSolver:
         divfac=default_values["divfac"]
         diviter=default_values["diviter"]
         logplot=default_values["logplot"]
+        logout=default_values["logout"]
         cpp_solver=default_values["cpp_solver"]
         scaling=default_values["scaling"]
     
@@ -131,6 +134,8 @@ class MatrixSolver:
             else:
                 solver=EMPY_Solver.EMPY_Solver();
 
+            
+
             #solver.Write(dim, len(rows), rows, cols, vals, fcut)
             solver.SetMatrix(dim, len(rows), rows, cols, vals)
             rows=None
@@ -141,6 +146,7 @@ class MatrixSolver:
             solver.SetEps(tol);
             solver.SetShiftParameter(accel_factor);
             solver.SetDivCriterion(divfac,  diviter)
+            solver.SetMaxIter(max_iter)
             
             start_time = time.perf_counter()           
             ucut=solver.Solve(fcut, ucut)
@@ -215,6 +221,9 @@ class MatrixSolver:
         ucut=None
         mat=None
         fcut=None
+
+        if logout: 
+            return gf, log1
 
         #log1min.append(min(log1))
         return gf #, power
